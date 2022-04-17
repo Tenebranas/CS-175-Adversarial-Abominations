@@ -1,0 +1,1 @@
+Place guides/videos/papers/whatever you used/found useful for developing your code here, preferably with a reference to where you used it.
