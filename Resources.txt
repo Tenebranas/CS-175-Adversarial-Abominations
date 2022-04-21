@@ -1,1 +1,2 @@
 Place guides/videos/papers/whatever you used/found useful for developing your code here, preferably with a reference to where you used it.
+Iterative FGSM based on this article and provided source code: https://davideliu.com/2020/05/29/white-box-adversarial-attacks-on-images/
