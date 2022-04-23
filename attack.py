@@ -69,7 +69,7 @@ class Attack:
                 #print("------------------")
                 #print("!!!early stopping!!!")
                 #print("------------------")
-                #break
+                break
         
 
         adv_outputs = self.vm.get_batch_output(perturbed_images)
