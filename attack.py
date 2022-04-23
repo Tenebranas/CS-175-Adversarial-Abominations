@@ -60,10 +60,16 @@ class Attack:
             final_pred = adv_outputs.max(1, keepdim=True)[1]
             correct = 0
             correct += (final_pred == target_labels).sum().item()
+            #print("---------------------")
+            #print(correct)
+            #print("---------------------")
             self.alpha = 0.997 * self.alpha
 
-            if correct == target_label:
-                break
+            if correct == original_images.size(dim=0):
+                #print("------------------")
+                #print("!!!early stopping!!!")
+                #print("------------------")
+                #break
         
 
         adv_outputs = self.vm.get_batch_output(perturbed_images)
