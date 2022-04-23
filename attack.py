@@ -28,7 +28,7 @@ class Attack:
         self.steps=10
         self.device = device
         self.attack_path = attack_path
-        self.epsilon = 0.05
+        self.epsilon = 0.11
         self.alpha=self.epsilon*1/self.steps
         self.min_val = 0
         self.max_val = 1
@@ -41,20 +41,37 @@ class Attack:
         labels = torch.tensor(labels).to(self.device)
         target_labels = target_label * torch.ones_like(labels).to(self.device)
         original_images.requires_grad = True
-        perturbed_image=self.step(original_images,target_labels)
+        perturbed_images=self.step(original_images,target_labels)
         for i in range(self.steps-1):
-            print("------------------------")
-            print(i)
-            print("------------------------")
-            perturbed_image=self.step(perturbed_image,target_labels)
+            perturbed_images=self.step(perturbed_images,target_labels)
         
+            perturbed_images.retain_grad()
+            # get gradient with repect to labels
+            data_grad = self.grad1(perturbed_images, target_labels)
+            
+            
+            sign_data_grad = data_grad.sign()
+
+            # perturd image
+            perturbed_images = perturbed_images - self.alpha*sign_data_grad
+            perturbed_images = torch.clamp(perturbed_images, self.min_val, self.max_val)
+
+            adv_outputs = self.vm.get_batch_output(perturbed_images)
+            final_pred = adv_outputs.max(1, keepdim=True)[1]
+            correct = 0
+            correct += (final_pred == target_labels).sum().item()
+            self.alpha = 0.997 * self.alpha
+
+            if correct == target_label:
+                break
         
 
-        adv_outputs = self.vm.get_batch_output(perturbed_image)
+        adv_outputs = self.vm.get_batch_output(perturbed_images)
         final_pred = adv_outputs.max(1, keepdim=True)[1]
         correct = 0
         correct += (final_pred == target_labels).sum().item()
-        return np.squeeze(perturbed_image.cpu().detach().numpy()), correct
+        return np.squeeze(perturbed_images.cpu().detach().numpy()), correct
+
     def step(self,original_images, target_labels):
         
         original_images.retain_grad()
