@@ -69,7 +69,7 @@ class Adv_Training():
 
 
 
-    def train(self, trainset, valset, device, epoches=40):
+    def train(self, trainset, valset, device, epoches=60):
         self.model.to(device)
         self.model.train()
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=100, shuffle=True, num_workers=10)
@@ -83,15 +83,18 @@ class Adv_Training():
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 # zero the parameter gradients
-                adv_inputs, _ = self.perturb.attack(inputs, labels.detach().cpu().tolist())
+                optimizer.zero_grad()
+                adv_inputs, _ = self.perturb.attack(inputs, labels)
                 adv_inputs = torch.tensor(adv_inputs).to(device)
-                # zero the parameter gradients
+                adv_outputs = self.model(adv_inputs)
+                loss_adv = criterion(adv_outputs, labels)
                 optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = criterion(outputs, labels)
-                loss.backward()
+                loss_comb = 0.95 * loss + 0.05 * loss_adv
+                loss_comb.backward()
                 optimizer.step()
-                running_loss += loss.item()
+                running_loss += loss_comb.item()
             print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / dataset_size))
             running_loss = 0.0
         valloader = torch.utils.data.DataLoader(valset, batch_size=100, shuffle=True, num_workers=10)
@@ -124,7 +127,6 @@ def main():
 
     dataset = get_dataset(dataset_configs)
     trainset = dataset['train']
-    print(trainset)
     valset = dataset['val']
     testset = dataset['test']
     adv_training.train(trainset, valset, device)
